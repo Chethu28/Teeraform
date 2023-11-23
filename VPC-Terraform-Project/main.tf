@@ -53,7 +53,7 @@ resource "aws_route_table_association" "rta2" {
 }
 
 resource "aws_security_group" "websg" {
-    egress {
+    ingress {
     description = "HTTP for VPC"
     from_port       = 80
     to_port         = 80
@@ -61,7 +61,7 @@ resource "aws_security_group" "websg" {
     cidr_block = ["0.0.0.0/0"] 
   }
 
-    egress {
+    ingress {
     description = "ssh"
     from_port       = 22
     to_port         = 22
