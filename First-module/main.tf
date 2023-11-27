@@ -1,9 +1,5 @@
-provider "aws" {
-    region = "us-east-1"
-}
-
 module "ec2_instance" {
-    source = ""./modules/ec2-instance"
-    ami_value = ""
-    instance_type_value = ""
+    source = "./modules/ec2-instance"
+    ami_value = "ami-06aa3f7caf3a30282"
+    instance_type_name = "t2.micro"
 }
