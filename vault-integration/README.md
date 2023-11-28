@@ -33,44 +33,48 @@ This guide provides detailed steps for integrating HashiCorp Vault with an AWS E
 ## Step 2: Install Vault on the EC2 Instance
 
 ### Download the signing key to a new keyring
-```bash
+```
 wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+```
 
 ### Verify the key's fingerprint
-```bash
+```
 gpg --no-default-keyring --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg --fingerprint
-
+```
 
 ### Add the HashiCorp repo
-```bash
+```
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+```
 
-
-```bash
+```
 sudo apt update
+```
 
 ### Install Vault
-```bash
+```
 sudo apt install vault
-
+```
 
 ## Step 3: Start Vault
 
 ### Start Vault with the following command:
-```bash
+```
 vault server -dev -dev-listen-address="0.0.0.0:8200"
-
+```
 
 ## Step 4: Configure Terraform to Read Secrets from Vault
 
 
 ### Enable AppRole Authentication in Vault
   ### Enable AppRole authentication:
-```bash
+```
 vault auth enable approle
 
+```
+
 ### Create a policy (e.g., terraform) in Vault:
-```bash
+```
 # Use the provided policy configuration or create your own
 vault policy write terraform - <<EOF
 path "*" {
@@ -94,11 +98,11 @@ path "auth/token/create" {
 capabilities = ["create", "read", "update", "list"]
 }
 EOF
-
+```
 
 
 ### Create an AppRole and associate the policy:
-```bash
+```
 vault write auth/approle/role/terraform \
     secret_id_ttl=10m \
     token_num_uses=10 \
@@ -107,15 +111,17 @@ vault write auth/approle/role/terraform \
     secret_id_num_uses=40 \
     token_policies=terraform
 
-
+```
 ### Generate Role ID and Secret ID:
 ## Generate Role ID:
-```bash
+```
 vault read auth/approle/role/terraform/role-id
+```
 
 ### Generate Secret ID:
-```bash
+```
 vault write -f auth/approle/role/terraform/secret-id
+```
 
 ## Save the Role ID and Secret ID for use in your Terraform configuration.
 
