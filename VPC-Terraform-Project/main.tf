@@ -1,22 +1,19 @@
 
 resource "aws_vpc" "myVPC" {
     cidr_block= "10.0.0.0/16"
-    tags = {
-       Name = "VPC1"
-    }
 }
 resource "aws_subnet" "subnet1" {
-    vpc_id = aws_default_vpc.myVPC.id
+    vpc_id = aws_vpc.myVPC.id
     cidr_block = "10.0.1.0/24"
     availability_zone = "us-east-1a"
     tags = {
         Name = "subnet1"
     }
-    map_public_ip_on_launch = "true"
+    map_public_ip_on_launch = true
 }
 
 resource "aws_subnet" "subnet2" {
-    vpc_id = aws_default_vpc.myVPC.id
+    vpc_id = aws_vpc.myVPC.id
     cidr_block = "10.0.2.0/24"
     availability_zone = "us-east-1b"
     tags = {
@@ -38,7 +35,7 @@ resource "aws_route_table" "myroutetables" {
         Name = "myroutetables"
     }
     route {
-    cidr_block = "0.0.0.0/24"
+    cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.igw.id
   }
 }
@@ -53,20 +50,22 @@ resource "aws_route_table_association" "rta2" {
 }
 
 resource "aws_security_group" "websg" {
+  name = "web"
+  vpc_id = aws_vpc.myVPC.id
     ingress {
     description = "HTTP for VPC"
     from_port       = 80
     to_port         = 80
-    protocol        =  TCP
-    cidr_block = ["0.0.0.0/0"] 
+    protocol        =  "tcp"
+    cidr_blocks = ["0.0.0.0/0"] 
   }
 
     ingress {
     description = "ssh"
     from_port       = 22
     to_port         = 22
-    protocol        =  TCP
-    cidr_block = ["0.0.0.0/0"] 
+    protocol        =  "tcp"
+    cidr_blocks = ["0.0.0.0/0"] 
   }
     egress {
     from_port        = 0
@@ -100,18 +99,15 @@ resource "aws_instance" "webserver2" {
     subnet_id = aws_subnet.subnet2.id
     vpc_security_group_ids = [aws_security_group.websg.id]
     #vpc_subnet_id = aws_subnet.subnet2.id
-     user_data   = base64encode(file("userdata.sh"))
+     user_data   = base64encode(file("userdata1.sh"))
 }
 
 resource "aws_lb" "ALB" {
-  name               = "test-lb-tf"
+  name               = "ALB"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.websg.id]
-  subnet_id = [aws_subnet.subnet1.id , aws_subnet.subnet2.id]
-  tags = {
-    Name = "ALB"
-  }
+  subnets = [aws_subnet.subnet1.id, aws_subnet.subnet2.id]
 }
 resource "aws_lb_target_group" "ALBTG" {
   name     = "MyTG"
@@ -119,18 +115,25 @@ resource "aws_lb_target_group" "ALBTG" {
   protocol = "HTTP"
   vpc_id   = aws_vpc.myVPC.id
 
-  healtch_check {
+  health_check {
     path = "/"
     port = "traffic-port"
   }
 }
-
+resource "aws_lb_target_group_attachment" "tga1" {
+  target_group_arn = aws_lb_target_group.ALBTG.arn
+  target_id        = aws_instance.webserver1.id
+  port             = 80
+}
+resource "aws_lb_target_group_attachment" "tga2" {
+  target_group_arn = aws_lb_target_group.ALBTG.arn
+  target_id        = aws_instance.webserver2.id 
+  port             = 80
+}
 resource "aws_lb_listener" "ALBlistener" {
   load_balancer_arn = aws_lb.ALB.arn
-  port              = "80"
+  port              = 80
   protocol          = "HTTP"
-  #ssl_policy        = "ELBSecurityPolicy-2016-08"
-  #certificate_arn   = "arn:aws:iam::187416307283:server-certificate/test_cert_rab3wuqwgja25ct3n4jdj2tzu4"
 
   default_action {
     type             = "forward"
