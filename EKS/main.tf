@@ -1,5 +1,5 @@
 ################## vpc ####################
-module "ec2_vpc" {
+module "vpc" {
   source = "terraform-aws-modules/vpc/aws"
 
   name = "vpc-eks"
@@ -38,8 +38,8 @@ module "eks" {
 
   cluster_endpoint_public_access  = true
 
-  vpc_id                   = module.ec2_vpc.vpc_id
-  subnet_ids               = module.ec2_vpc.private_subnets
+  vpc_id                   = module.vpc.vpc_id
+  subnet_ids               = module.vpc.private_subnets
 
 
   eks_managed_node_groups = {
