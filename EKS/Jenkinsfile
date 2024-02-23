@@ -1,0 +1,71 @@
+pipeline {
+    agent any
+    
+    environment {
+        AWS_ACCESS_KEY_ID = credentials("AWS_ACCESS_KEY_ID")
+        AWS_SECRET_ACCESS_KEY = credentials("AWS_SECERT_KEY")
+        AWS_DEFAULT_REGION="us-east-1"
+    }
+
+    stages {
+        stage('git checkout') {
+            steps {
+                checkout scmGit(branches: [[name: '*/main']], extensions: [[$class: 'SparseCheckoutPaths', sparseCheckoutPaths: [[path: 'EKS']]]], userRemoteConfigs: [[url: 'https://github.com/Chethu28/Terraform.git']])
+                
+        }
+    }
+        stage('terraform-init') {
+            steps {
+                script {
+                    dir ('EKS'){
+                    sh 'terraform init'
+                }
+                }
+    }
+}
+
+        stage('terraform-validate') {
+            steps {
+                script {
+                    dir ('EKS'){
+                    sh 'terraform fmt'
+                    sh 'terraform validate'
+                }
+                }
+    }
+}
+        stage('terraform-plan') {
+            steps {
+                script {
+                    dir ('EKS'){
+                    sh 'terraform plan'
+                }
+                input message: 'Are you sure , can we deploy the EKS cluster?', ok: 'proceed' 
+                }
+    }
+}
+
+        stage('terraform apply/destroy') {
+            steps {
+                script {
+                    dir ('EKS'){
+                    sh 'terraform $choice --auto-approve'
+                }
+                }
+    }
+}
+
+        stage('Deploying Nginx Application') {
+            steps{
+                script{
+                    dir('EKS/mainfests') {
+                        sh 'aws eks update-kubeconfig --name my-eks-cluster'
+                        sh 'kubectl apply -f deployment.yaml'
+                        sh 'kubectl apply -f service.yaml'
+                    }
+                }
+            }
+        }
+
+}
+}
