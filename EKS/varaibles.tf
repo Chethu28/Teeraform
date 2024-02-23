@@ -14,7 +14,7 @@ variable "public_subnets" {
   type        = list(string)
 }
 
-variable "instance_type" {
-  description = "instance type"
-  type        = string
+variable "private_subnets" {
+  description = "public subnet cidr "
+  type        = list(string)
 }
